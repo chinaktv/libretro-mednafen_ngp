@@ -15,14 +15,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "mednafen.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
 #include <vector>
 
 #include "general.h"
+#include "mednafen.h"
 #include "mempatcher.h"
 
 #ifdef _WIN32
@@ -99,7 +100,7 @@ static void RebuildSubCheats(void)
    }
 }
 
-bool MDFNMP_Init(uint32 ps, uint32 numpages)
+extern "C" bool MDFNMP_Init(uint32 ps, uint32 numpages)
 {
    PageSize = ps;
    NumPages = numpages;
@@ -110,7 +111,7 @@ bool MDFNMP_Init(uint32 ps, uint32 numpages)
    return(1);
 }
 
-void MDFNMP_Kill(void)
+extern "C" void MDFNMP_Kill(void)
 {
    if(RAMPtrs)
    {
@@ -119,8 +120,7 @@ void MDFNMP_Kill(void)
    }
 }
 
-
-void MDFNMP_AddRAM(uint32 size, uint32 A, uint8 *RAM)
+extern "C" void MDFNMP_AddRAM(uint32 size, uint32 A, uint8 *RAM)
 {
    unsigned x;
    uint32_t AB = A / PageSize;
@@ -135,7 +135,7 @@ void MDFNMP_AddRAM(uint32 size, uint32 A, uint8 *RAM)
    }
 }
 
-void MDFNMP_InstallReadPatches(void)
+extern "C" void MDFNMP_InstallReadPatches(void)
 {
    unsigned x;
    std::vector<SUBCHEAT>::iterator chit;
@@ -148,8 +148,8 @@ void MDFNMP_InstallReadPatches(void)
    {
       for(chit = SubCheats[x].begin(); chit != SubCheats[x].end(); chit++)
       {
-         if(MDFNGameInfo->InstallReadPatch)
-            MDFNGameInfo->InstallReadPatch(chit->addr);
+         if(EmulatedNGP.InstallReadPatch)
+            EmulatedNGP.InstallReadPatch(chit->addr);
       }
    }
 #endif
@@ -158,8 +158,8 @@ void MDFNMP_InstallReadPatches(void)
 void MDFNMP_RemoveReadPatches(void)
 {
 #if 0
-   if(MDFNGameInfo->RemoveReadPatches)
-      MDFNGameInfo->RemoveReadPatches();
+   if(EmulatedNGP.RemoveReadPatches)
+      EmulatedNGP.RemoveReadPatches();
 #endif
 }
 
@@ -182,12 +182,12 @@ static int AddCheatEntry(char *name, char *conditions, uint32 addr, uint64 val, 
    return(1);
 }
 
-void MDFN_LoadGameCheats(void *override_ptr)
+extern "C" void MDFN_LoadGameCheats(void *override_ptr)
 {
    RebuildSubCheats();
 }
 
-void MDFN_FlushGameCheats(int nosave)
+extern "C" void MDFN_FlushGameCheats(int nosave)
 {
    std::vector<CHEATF>::iterator chit;
 
@@ -301,7 +301,7 @@ static bool TestConditions(const char *string)
             shiftie = (bytelen - 1 - x) * 8;
          else
             shiftie = x * 8;
-         value_at_address |= MDFNGameInfo->MemRead(v_address + x) << shiftie;
+         value_at_address |= EmulatedNGP.MemRead(v_address + x) << shiftie;
       }
 #endif
 
@@ -366,20 +366,20 @@ static bool TestConditions(const char *string)
          if(value_at_address | v_value)
             passed = 0;
       }
+#if 0
       else
          puts("Invalid operation");
+#endif
       string = strchr(string, ',');
-      if(string == NULL)
+      if(!string)
          break;
-      else
-         string++;
-      //printf("Foo: %s\n", string);
+      string++;
    }
 
    return(passed);
 }
 
-void MDFNMP_ApplyPeriodicCheats(void)
+extern "C" void MDFNMP_ApplyPeriodicCheats(void)
 {
    std::vector<CHEATF>::iterator chit;
 
@@ -517,10 +517,3 @@ static void SettingChanged(const char *name)
 
    MDFNMP_InstallReadPatches();
 }
-
-
-MDFNSetting MDFNMP_Settings[] =
-{
- { "cheats", MDFNSF_NOFLAGS, "Enable cheats.", NULL, MDFNST_BOOL, "1", NULL, NULL, NULL, SettingChanged },
- { NULL}
-};

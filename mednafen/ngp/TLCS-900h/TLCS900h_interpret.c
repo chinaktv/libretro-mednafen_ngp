@@ -61,9 +61,11 @@
 #include "TLCS900h_interpret_dst.h"
 #include "TLCS900h_interpret_reg.h"
 
+#ifdef TLCS_ERRORS
 static void DUMMY_instruction_error(const char* vaMessage,...) { }
 
 void (*instruction_error)(const char* vaMessage,...) = DUMMY_instruction_error;
+#endif
 
 //=========================================================================
 
@@ -811,7 +813,9 @@ static void (*decodeExtra[256])() =
 
 static void e(void)
 {
+#ifdef TLCS_ERRORS
 	instruction_error("Unknown instruction %02X", first);
+#endif
 }
 
 static void es(void)
